@@ -19,6 +19,8 @@ langchain-openai = "^0.1.7"
 python-dotenv = "^1.0.1"
 langchainhub = "^0.1.15"
 torch = "^2.3.0"
+pandas = "^2.2.2"
+chromadb = "^0.5.0"
 
 
 [tool.poetry.group.dev.dependencies]

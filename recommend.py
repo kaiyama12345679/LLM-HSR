@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import sqlite3
 import uuid
 load_dotenv()
+from record_audio import record_audio, Voice2Text
 
 template = '''Answer the following questions as best you can. You have access to the following tools:
 
@@ -64,10 +65,12 @@ def get_books_content(books, cur: sqlite3.Cursor):
     return tasks
 
 if __name__ == "__main__":
-    books = ["容疑者Xの献身", "解析入門1", "月刊少女野崎くん", "ハリー・ポッターと賢者の石", "ゴールデンカムイ"]
-    user_preference = input("読みたい本についての要求：")
+    books = ["容疑者Xの献身", "解析入門1", "月刊少女野崎くん", "ハリー・ポッターと賢者の石", "ゴールデンカムイ", "ゼロの使い魔"]
+    record_audio("myvoice.wav")
+    v2t = Voice2Text()
+    user_preference = v2t.transcribe("myvoice.wav")
     if type(user_preference) != str:
-        raise ValueError("Please enter a valid string")
+        raise ValueError("Input Error: Please speak clearly and try again.")
     try:
         db = sqlite3.connect("./books.db")
         cursor = db.cursor()

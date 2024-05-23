@@ -29,7 +29,8 @@ RUN apt install -y build-essential \
     gcc \
     python3-dev \
     ffmpeg \
-    portaudio19-dev 
+    portaudio19-dev \
+    pulseaudio 
 # Install pyenv
 RUN git clone https://github.com/pyenv/pyenv.git /root/.pyenv
 ENV PYENV_ROOT="/root/.pyenv"

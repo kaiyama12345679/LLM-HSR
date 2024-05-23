@@ -8,6 +8,7 @@ import sqlite3
 import uuid
 load_dotenv()
 from record_audio import record_audio, Voice2Text
+from txt2voice import txt2voice
 
 template = '''Answer the following questions as best you can. You have access to the following tools:
 
@@ -66,11 +67,13 @@ def get_books_content(books, cur: sqlite3.Cursor):
 
 if __name__ == "__main__":
     books = ["容疑者Xの献身", "解析入門1", "月刊少女野崎くん", "ハリー・ポッターと賢者の石", "ゴールデンカムイ", "ゼロの使い魔"]
+    txt2voice("ずんだもんなのだ．読んでみたい本の特徴を教えるのだ．")
     record_audio("myvoice.wav")
     v2t = Voice2Text()
     user_preference = v2t.transcribe("myvoice.wav")
     if type(user_preference) != str:
         raise ValueError("Input Error: Please speak clearly and try again.")
+    print(f"User Preference: {user_preference}")
     try:
         db = sqlite3.connect("./books.db")
         cursor = db.cursor()
@@ -98,4 +101,5 @@ if __name__ == "__main__":
 
     max_index = torch.argmax(similarity)
     print(f"最もマッチした本は{idx2title[max_index.item()]}です。")
+    txt2voice(f"わかったのだ．多分{idx2title[max_index.item()]}がおすすめなのだ．")
 

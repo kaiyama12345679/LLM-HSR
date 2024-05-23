@@ -6,6 +6,7 @@ import pyaudio
 import numpy as np
 import whisper
 import wave
+import os
 
 # 音声録音の設定
 FORMAT = pyaudio.paInt16
@@ -73,6 +74,8 @@ class Voice2Text:
 
     def transcribe(self, audio_file):
         result = self.model.transcribe(audio_file, language="ja")
+        #delte audio file
+        os.remove(audio_file)
         return result["text"]
 
 if __name__ == "__main__":

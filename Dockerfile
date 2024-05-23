@@ -42,11 +42,10 @@ RUN python3 --version
 
 WORKDIR /app
 # COPY
-COPY ./* /app/
+COPY ./ /app/
 
 # Python environment settings
-ENV POETRY_HOME="/root/.local" \
-    PYTHONUNBUFFERED=1
+ENV POETRY_HOME="/root/.local" 
 ENV PATH="$POETRY_HOME/bin:$PATH"
 RUN curl -sSL https://install.python-poetry.org | python3 -
 

@@ -10,7 +10,8 @@ RUN apt-get update && apt-get upgrade -y \
     ca-certificates \
     sudo \
     bzip2 \
-    libx11-6 
+    libx11-6 \
+    iputils-ping net-tools
 
 RUN apt install -y build-essential \
     libssl-dev \
@@ -53,6 +54,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 # Setup the virtual environment
 RUN poetry config virtualenvs.in-project true
 RUN poetry install
+
 
 # Start shell
 CMD ["/bin/bash"]

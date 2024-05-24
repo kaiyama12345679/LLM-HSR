@@ -26,6 +26,7 @@ torchaudio = "^2.3.0"
 torchvision = "^0.18.0"
 openai-whisper = {git = "https://github.com/openai/whisper.git"}
 simpleaudio = "^1.0.4"
+aplay = "^1.1.1"
 
 
 [tool.poetry.group.dev.dependencies]

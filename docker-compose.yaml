@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  recommend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: recommend-image
+    container_name: recommend-service
+    stdin_open: true
+    tty: true
+    environment:
+      - PULSE_SERVER=host.docker.internal
+    volumes:
+      - ~/.config/pulse:/root/.config/pulse
+      - ./:/app
+      - venv:/app/.venv/
+    depends_on:
+      - voicevox
+    networks:
+      - voice-network
+
+  voicevox:
+    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+    container_name: voicevox-service
+    stdin_open: true
+    tty: true
+    ports:
+      - "50021:50021"
+    networks:
+      - voice-network
+
+
+volumes:
+  venv:
+   name: venv
+
+networks:
+  voice-network:
+    driver: bridge
+   

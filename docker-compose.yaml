@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
     image: recommend-image
     container_name: recommend-service
+    privileged: true
     stdin_open: true
     tty: true
     environment:
@@ -13,6 +14,7 @@ services:
     volumes:
       - ~/.config/pulse:/root/.config/pulse
       - ./:/app
+      - /dev:/dev
       - venv:/app/.venv/
     depends_on:
       - voicevox

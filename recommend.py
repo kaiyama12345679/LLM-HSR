@@ -6,9 +6,15 @@ import torch
 from dotenv import load_dotenv
 import sqlite3
 import uuid
+from logging import getLogger, StreamHandler
+import logging
 load_dotenv()
 from record_audio import record_audio, Voice2Text
 from txt2voice import txt2voice
+
+logger = getLogger(__name__)
+stream_handler = StreamHandler()
+logger.addHandler(stream_handler)
 
 template = '''Answer the following questions as best you can. You have access to the following tools:
 
@@ -48,10 +54,12 @@ def get_content(title: str, cur: sqlite3.Cursor):
     if not check_book_exists(title, cur):
         result = agent_executor.invoke({"input": book_prompt})
         cur.execute("INSERT INTO books (id, title, content) VALUES (?, ?, ?)", (str(uuid.uuid4()), title, result["output"]))
+        logger.info(f"from Web => title: {title}, content: {result['output']}")
         return {"title": title, "output": result["output"]}
     else:
         cur.execute("SELECT content FROM books WHERE title=?", (title,))
         result = cur.fetchone()
+        logger.info(f"from DB => title: {title}, content: {result[0]}")
         return {"title": title, "output": result[0]}
     
 def check_book_exists(title, cur: sqlite3.Cursor):
@@ -66,7 +74,8 @@ def get_books_content(books, cur: sqlite3.Cursor):
     return tasks
 
 if __name__ == "__main__":
-    books = ["容疑者Xの献身", "解析入門1", "月刊少女野崎くん", "ハリー・ポッターと賢者の石", "ゴールデンカムイ", "ゼロの使い魔"]
+    logger.setLevel(logging.INFO)
+    books = ["容疑者Xの献身", "解析入門1", "月刊少女野崎くん", "ハリー・ポッターと賢者の石", "ゴールデンカムイ", "ロシア語でボソッとデレるアーリャさん"]
     txt2voice("ずんだもんなのだ．読んでみたい本の特徴を教えるのだ．")
     record_audio("myvoice.wav")
     v2t = Voice2Text()

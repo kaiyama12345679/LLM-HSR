@@ -42,7 +42,7 @@ tools = ["google-search"]
 llm = ChatOpenAI(model="gpt-3.5-turbo")
 tools = load_tools(tools, llm=llm)
 agent = create_react_agent(llm, tools, prompt)
-agent_executor =AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent_executor =AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parse_error=True)
 
 def get_content(title: str, cur: sqlite3.Cursor):
     book_template = """

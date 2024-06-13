@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SYS_MESSAGE = """あなたは物体検出と文字認識を正確に行う機械です.与えられた画像に写っている本のタイトルを左から順に以下のformatで列挙してください
-    format: <STA>, 本の名前1, 本の名前2, 本の名前3, ..., 本の名前N, <END>
+SYS_MESSAGE = """あなたは物体検出と文字認識を正確に行う機械です.与えられた画像に写っている本の数とそのタイトルを左から順に以下のformatで列挙してください
+    format: N<SEP>本の名前1<SEP>本の名前2<SEP>本の名前3<SEP>...<SEP>本の名前N
 
-    タイトル以外の文字列は出力しないでください．
+    本のタイトル以外の文字も全て，本のタイトルにつづけて出力してください
     もし本のタイトルが読み取れない場合は，その本の名前を<UNK>としてください．
     一冊も本が写っていない場合は，<NONE>のみを出力してください．
     それ以外の場合は，<ERR>のみを出力してください．
@@ -42,7 +42,16 @@ class BookFinder:
         response = chain.invoke({})
         return response.content
     
+    @staticmethod
+    def parse_book_name(detected_books: str):
+        book_number = detected_books.split("<SEP>")[0]
+        books = detected_books.split("<SEP>")[1:]
+        return book_number, [book for book in books]
+    
 
 if __name__ == "__main__":
     bf = BookFinder()
-    print(bf.find_books("./sample_image.jpg"))
+    books = bf.find_books("./sample_image.jpg")
+    print(books)
+    book_number, book_names = bf.parse_book_name(books)
+    print(book_number, book_names)

@@ -10,11 +10,12 @@ services:
     stdin_open: true
     tty: true
     environment:
-      - PULSE_SERVER=host.docker.internal
+      - PULSE_SERVER=unix:/run/user/$(id -u)/pulse/native
     volumes:
       - ~/.config/pulse:/root/.config/pulse
       - ./:/app
       - /dev:/dev
+      - /run/user/$(id -u)/pulse:/run/user/$(id -u)/pulse 
       - venv:/app/.venv/
     depends_on:
       - voicevox

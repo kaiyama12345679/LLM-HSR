@@ -9,13 +9,15 @@ services:
     privileged: true
     stdin_open: true
     tty: true
+    user: $(id -u)
     environment:
-      - PULSE_SERVER=unix:/run/user/$(id -u)/pulse/native
+      - PULSE_SERVER=unix:/tmp/pulse/native
+      - PULSE_COOKIE=/tmp/pulse/cookie 
     volumes:
-      - ~/.config/pulse:/root/.config/pulse
+      - ~/.config/pulse/cookie:/tmp/pulse/cookie:ro
       - ./:/app
       - /dev:/dev
-      - /run/user/$(id -u)/pulse:/run/user/$(id -u)/pulse 
+      - /run/user/$(id -u)/pulse/native:/tmp/pulse/native 
       - venv:/app/.venv/
     depends_on:
       - voicevox

@@ -69,7 +69,7 @@ class Voice2Text:
         wf.writeframes(b''.join(frames))
         wf.close()
         result = self.transcribe("myvoice.wav")
-        return result["text"]
+        return result
     
 
 

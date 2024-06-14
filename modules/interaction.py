@@ -18,6 +18,7 @@ class Interaction:
     def __init__(self):
         self.voice2text = Voice2Text()
         self.chatbot = ChatOpenAI(model="gpt-4o")
+        print("Chatbot is ready!")
 
     def process(self):
         while True:
@@ -39,3 +40,8 @@ class Interaction:
                 txt2voice("本を探してあげるのだ．どんな本が読みたいのだ？")
             else:
                 txt2voice(response.content)
+
+
+if __name__ == "__main__":
+    interaction = Interaction()
+    interaction.process()

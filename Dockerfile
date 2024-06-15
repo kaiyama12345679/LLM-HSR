@@ -33,8 +33,6 @@ RUN apt install -y build-essential \
     portaudio19-dev \
     pulseaudio 
 
-ARG UID 1000
-RUN useradd -m -u ${UID} user
 # Install pyenv
 RUN git clone https://github.com/pyenv/pyenv.git /root/.pyenv
 ENV PYENV_ROOT="/root/.pyenv"
@@ -56,6 +54,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 
 # Setup the virtual environment
 RUN poetry config virtualenvs.in-project true
+RUN poetry env use 3.10.9
 RUN poetry install
 
 

@@ -13,7 +13,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
-THRESHOLD = 800  # 音量のしきい値
+THRESHOLD = 1000  # 音量のしきい値
 SILENCE_DURATION = 2  # 録音終了と判断する無音の持続時間（秒）
 
 def is_silent(data_chunk):

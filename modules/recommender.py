@@ -69,7 +69,8 @@ class Recommender():
                 return {"title": title, "output": result["output"]}
             else:
                 self.cursor.execute("SELECT content FROM books WHERE title=?", (title,))
-                return self.cursor.fetchone()
+                content = self.cursor.fetchone()
+                return {"title": title, "output": content[0]}
         except Exception as e:
             self.db.rollback()
             raise e
@@ -98,10 +99,14 @@ class Recommender():
         pfr_embedding = pfr_embedding.unsqueeze(0).expand(embeddings.shape[0], -1)
         similarities = torch.nn.functional.cosine_similarity(embeddings, pfr_embedding, dim=1)
 
-        top_k_indices = similarities.argsort(descending=True)[:top_k]
-        top_k_books = [idx2title[idx] for idx in top_k_indices]
-        return top_k_books
+        top_idx = similarities.argsort(descending=True)[0].item()
+        return idx2title[top_idx]
 
-
+if __name__ == "__main__":
+    recommender = Recommender("books.db", verbose=True)
+    books = ["ハリーポッターと賢者の石", "ソードアートオンライン", "四月は君の嘘", "解析入門", "ゼロから作るDeep Learning"]
+    query = "I want to read a book about magic and fantasy"
+    recommendded_book = recommender.get_recommendations(books, query)
+    print(recommendded_book)
 
 

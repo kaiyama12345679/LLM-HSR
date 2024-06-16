@@ -4,14 +4,17 @@ import requests
 import time
 import os
 
+HOST = "localhost"
+#HOST = "voicevox-service"
+
 def txt2voice(text, spekaer: int = 3):
     ut = time.time()
 
     #クエリ生成
-    res1 = requests.post("http://voicevox-service:50021/audio_query",
+    res1 = requests.post(f"http://{HOST}:50021/audio_query",
                         params={"text": text, "speaker": spekaer})
     # synthesis (音声合成するAPI)
-    res2 = requests.post("http://voicevox-service:50021/synthesis",
+    res2 = requests.post(f"http://{HOST}:50021/synthesis",
                         params={"speaker": spekaer},
                         data=json.dumps(res1.json()))
     # wavファイルに書き込み

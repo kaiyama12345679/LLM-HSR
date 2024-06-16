@@ -12,8 +12,8 @@ import os
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
-CHUNK = 1024
-THRESHOLD = 1000  # 音量のしきい値
+CHUNK = 2048
+THRESHOLD = 2000  # 音量のしきい値
 SILENCE_DURATION = 2  # 録音終了と判断する無音の持続時間（秒）
 
 def is_silent(data_chunk):
@@ -44,7 +44,7 @@ class Voice2Text:
 
         while True:
             try:
-                data = self.stream.read(CHUNK)
+                data = self.stream.read(CHUNK, exception_on_overflow=False)
                 if recording:
                     frames.append(data)
                     if is_silent(data):

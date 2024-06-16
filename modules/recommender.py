@@ -33,7 +33,7 @@ Thought:{agent_scratchpad}'''
 
 BOOK_TEMPLATE = """
 Please Describe the content of the book "{title}. You should provides as much specific information as possible about what the book covers, important, themes, genre, proper nouns, and a summary of the content".
-Do not include any information unrelated to the book's content.
+Do not include any sentences nor words unrelated to the book's content in your response.
 """
 
 
@@ -43,7 +43,7 @@ class Recommender():
         self.stream_handler = StreamHandler()
         self.logger.addHandler(self.stream_handler)
 
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4")
         self.prompt = PromptTemplate.from_template(TEMPLATE)
         self.tools = load_tools(["google-search"], llm=self.llm)
         self.agent = create_react_agent(self.llm, self.tools, self.prompt)
@@ -105,7 +105,7 @@ class Recommender():
 if __name__ == "__main__":
     recommender = Recommender("books.db", verbose=True)
     books = ["ハリーポッターと賢者の石", "ソードアートオンライン", "四月は君の嘘", "解析入門", "ゼロから作るDeep Learning"]
-    query = "I want to read a book about magic and fantasy"
+    query = "ファンタジー系じゃない，でもラブコメの本を探しているんだけど"
     recommendded_book = recommender.get_recommendations(books, query)
     print(recommendded_book)
 

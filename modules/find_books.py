@@ -4,6 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts.chat import HumanMessagePromptTemplate
 import base64
 from dotenv import load_dotenv
+import cv2
 
 load_dotenv()
 
@@ -23,6 +24,12 @@ class BookFinder:
     def __init__(self):
         self.model = ChatOpenAI(model="gpt-4o")
 
+    def _process_image_from_raw(self, image):
+        _, buffer = cv2.imencode('.png', image)
+
+        encoded_string = base64.b64encode(buffer).decode("utf-8")
+
+        return encoded_string
 
     def _process_image(self, image_path):
         with open(image_path, "rb") as image_file:

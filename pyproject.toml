@@ -27,6 +27,7 @@ torchvision = "^0.18.0"
 openai-whisper = {git = "https://github.com/openai/whisper.git"}
 simpleaudio = "^1.0.4"
 aplay = "^1.1.1"
+opencv-python = "^4.10.0.84"
 
 
 [tool.poetry.group.dev.dependencies]

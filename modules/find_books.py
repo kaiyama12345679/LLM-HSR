@@ -45,9 +45,14 @@ class BookFinder:
     
     @staticmethod
     def parse_book_name(detected_books: str):
-        book_number = detected_books.split("<SEP>")[0]
-        books = detected_books.split("<SEP>")[1:]
-        return book_number, [book for book in books]
+        if detected_books == "<NONE>":
+            return 0, []
+        elif detected_books == "<ERR>":
+            return -1, []
+        else:
+            book_number = detected_books.split("<SEP>")[0]
+            books = detected_books.split("<SEP>")[1:]
+            return book_number, [book for book in books]
     
 
 if __name__ == "__main__":

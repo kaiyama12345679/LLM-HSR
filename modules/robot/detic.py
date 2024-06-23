@@ -82,6 +82,8 @@ class DeticPredictor:
         head_rgb_sub = message_filters.Subscriber('/hsrb/head_rgbd_sensor/rgb/image_raw', Image)
         head_depth_sub = message_filters.Subscriber('/hsrb/head_rgbd_sensor/depth_registered/image', Image)
         hand_rgb_sub = message_filters.Subscriber('/hsrb/hand_camera/image_raw', Image)
+        self.detection_result_pub_head = rospy.Publisher('/detic_image_node/detection_result_head', Image, queue_size=10)
+        self.detection_result_pub_hand = rospy.Publisher('/detic_image_node/detection_result_hand', Image, queue_size=10)
 
         message_filters.ApproximateTimeSynchronizer([head_rgb_sub, head_depth_sub, hand_rgb_sub], 10, 1.0).registerCallback(self._callback)
 
@@ -106,15 +108,26 @@ class DeticPredictor:
         hand_rgb_array = cv2.cvtColor(hand_rgb_array, cv2.COLOR_BGR2RGB)
         self.hand_rgb_image = hand_rgb_array
 
+    def _publish_result(self, image, outputs, pub):
+        v = Visualizer(image[:, :, ::-1], self.metadata)
+        out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+        output = out.get_image()[:, :, ::-1]
+        output = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
+        pub.publish(self.bridge.cv2_to_imgmsg(output, 'bgr8'))
+
     def process(self):
         while not rospy.is_shutdown() or not self.should_stop:
             if self.head_rgb_image is None or self.head_depth_image is None or self.hand_rgb_image is None:
                 continue
-
+            tmp_head = copy.deepcopy(self.head_rgb_image)
+            tmp_hand = copy.deepcopy(self.hand_rgb_image)
             # inference
             with torch.no_grad():
                 outputs_from_head = self.predictor(self.head_rgb_image)
                 outputs_from_hand = self.predictor(self.hand_rgb_image)
+            
+            self._publish_result(tmp_head, outputs_from_head, self.detection_result_pub_head)
+            self._publish_result(tmp_hand, outputs_from_hand, self.detection_result_pub_hand)
 
             hand_rgb_size = self.hand_rgb_image.shape
             head_rgb_size = self.head_rgb_image.shape

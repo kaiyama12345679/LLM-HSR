@@ -58,8 +58,8 @@ class Flow():
 
                 elif self.state == State.RECOMMEND:
                     self.controller.speak("どんな本が読みたいですか？")
-                    if len(self.detector.books) > 0:
-                        top_book = self.recommender.get_recommendations_from_title(self.detector.books[0])
+                    if self.detector.book_name is not None:
+                        top_book = self.recommender.get_recommendations_from_title(self.detector.book_name)
                     else:
                         is_listen_success, query = self.controller.listen()
                         if not is_listen_success:

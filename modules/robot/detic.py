@@ -94,7 +94,7 @@ class DeticPredictor:
         self.head_objects = []
         self.hand_objects = []
 
-        self.books = []
+        self.book_name = None
         self.should_detect = False
 
         self.finder = BookFinder(titles)
@@ -123,7 +123,7 @@ class DeticPredictor:
         while not rospy.is_shutdown():
             if not self.should_detect:
                 continue
-            self.books = []
+            self.book_name = None
             if self.head_rgb_image is None or self.head_depth_image is None or self.hand_rgb_image is None:
                 continue
             tmp_head = copy.deepcopy(self.head_rgb_image)
@@ -143,6 +143,8 @@ class DeticPredictor:
             self.hand_objects = []
 
             # plot bounding box and control movement
+            max_depth = 1e6
+            book_location = None
             for idx in range(len(outputs_from_head["instances"].pred_classes)):
                 object_cls = self.metadata.thing_classes[outputs_from_head["instances"].pred_classes[idx]]
 
@@ -151,14 +153,20 @@ class DeticPredictor:
 
                 box = outputs_from_head["instances"].pred_boxes[idx].tensor.cpu().numpy()[0]
                 min_x, min_y, max_x, max_y = int(box[0]), int(box[1]), int(box[2]), int(box[3])
-                info = {"cls": object_cls, "location": (min_x, min_y, max_x, max_y), "depth": self.head_depth_image[int(min_y):int(max_y), int(min_x):int(max_x)]}
-                book_image = self.head_rgb_image[int(min_y):int(max_y), int(min_x):int(max_x)]
+                cx, cy = (min_x + max_x) / 2, (min_y + max_y) / 2
+                depth = self.head_depth_image[int(cy), int(cx)]
+                if depth < max_depth and object_cls == "book":
+                    max_depth = depth
+                    book_location = (min_x, min_y, max_x, max_y)
 
+                info = {"cls": object_cls, "location": (min_x, min_y, max_x, max_y), "depth": self.head_depth_image[int(min_y):int(max_y), int(min_x):int(max_x)]}
+                self.head_objects.append(info)
+            
+            if book_location is not None:
+                book_image = self.head_rgb_image[int(book_location[1]):int(book_location[3]), int(book_location[0]):int(book_location[2])]
                 book_number, book_names = self.finder.find_books_from_raw(book_image)
                 if book_number > 0:
-                    self.books.append(book_names)
-
-                self.head_objects.append(info)
+                    self.book_name = book_names[0]
         
             for idx in range(len(outputs_from_hand["instances"].pred_classes)):
                 object_cls = self.metadata.thing_classes[outputs_from_head["instances"].pred_classes[idx]]

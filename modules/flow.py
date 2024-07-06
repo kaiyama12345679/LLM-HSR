@@ -1,7 +1,10 @@
 from llm.recommender import Recommender
 from llm.interaction import Interaction
 from robot.controller import Controller
+from robot.detic import DeticPredictor
+from llm.find_books import BookFinder
 from enum import Enum
+from threading import Thread
 import rospy
 
 class State(Enum):
@@ -17,16 +20,23 @@ class Flow():
     def __init__(self):
 
         self.controller = Controller(location_file_path="/root/HSR/catkin_ws/src/gpsr/scripts/spotting_data/kawa5.json")
-        self.recommender = Recommender("books.db", self.controller.books, verbose=True)
+        self.detector = DeticPredictor(titles=["hoge"])
+        self.recommender = Recommender("books.db", verbose=True)
+        self.recommender.insert_books(self.controller.books, place=0)
+        self.recommender.insert_books([""], place=1) # TODO: ここに本の内容を入れる
         self.interaction = Interaction()
 
         self.state = State.WAIT
         self.controller.speak("全ての初期化が完了しました．")
 
     def process(self):
+        # Start the Detection Thread
+        Thread(target=self.detector.process).start()
+
         while not rospy.is_shutdown():
             try:
                 if self.state == State.WAIT:
+                    self.detector.should_detect = True
                     is_listen_success, sentence = self.controller.listen()
                     print(is_listen_success, sentence)
                     
@@ -48,14 +58,17 @@ class Flow():
 
                 elif self.state == State.RECOMMEND:
                     self.controller.speak("どんな本が読みたいですか？")
-                    is_listen_success, query = self.controller.listen()
+                    if len(self.detector.books) > 0:
+                        top_book = self.recommender.get_recommendations_from_title(self.detector.books[0])
+                    else:
+                        is_listen_success, query = self.controller.listen()
+                        if not is_listen_success:
+                            self.controller.speak("聞き取りがうまくいかなかったようです．もう一度お願いします．")
+                            continue
 
-                    if not is_listen_success:
-                        self.controller.speak("聞き取りがうまくいかなかったようです．もう一度お願いします．")
-                        continue
-
+                        top_book = self.recommender.get_recommendations_from_query(query)
+                    self.detector.should_detect = False
                     self.controller.speak(f"わかりました．好みの本を探します．しばらく時間がかかります")
-                    top_book = self.recommender.get_recommendations(query)
                     self.controller.speak(f"多分{top_book}がおすすめです．")
                     self.state = State.FOR
                     self.controller.speak("本を取りに行きます．")

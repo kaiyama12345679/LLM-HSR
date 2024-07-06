@@ -39,7 +39,7 @@ Do not include any sentences nor words unrelated to the book's content in your r
 
 
 class Recommender():
-    def __init__(self, db_path, books, verbose = False):
+    def __init__(self, db_path, books=None, verbose = False):
         self.logger = getLogger(__name__)
         self.stream_handler = StreamHandler()
         self.logger.addHandler(self.stream_handler)
@@ -54,29 +54,17 @@ class Recommender():
 
         self.db = sqlite3.connect(db_path)
         self.cursor = self.db.cursor()
-
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS books (id TEXT PRIMARY KEY, title TEXT, content TEXT)")
+        # place: 0 for in environment, and 1 for user's request
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS books (id TEXT PRIMARY KEY, place INT, title TEXT, content TEXT)")
         if books is not None:
             self.insert_books(books)
         self.db.commit()
 
-    def get_books_content(self, books):
-        tasks = []
-        for title in books:
-            tasks.append(self.get_content(title))
-        return tasks
+    def get_books_content(self, place=0):
+        self.cursor.execute("SELECT title, content FROM books WHERE place=?", (place,))
+        return [{"title": output[0], "output": output[1]} for output in self.cursor.fetchall()]
 
-    def get_content(self, title):
-        try:
-            self.cursor.execute("SELECT content FROM books WHERE title=?", (title,))
-            content = self.cursor.fetchone()
-            assert content[0] is not None or content[0] != ""
-            return {"title": title, "output": content[0]}
-        except Exception as e:
-            self.db.rollback()
-            raise e
-        
-    def insert_books(self, titles):
+    def insert_books(self, titles, place=0):
         for title in titles:
             if not self.check_book_exists(title):
                 try:
@@ -84,7 +72,7 @@ class Recommender():
                     book_prompt = book_prompt.format(title=title)
                     result = self.agent_executor.invoke({"input": book_prompt})
                     assert result["output"] is not None or result["output"] != ""
-                    self.cursor.execute("INSERT INTO books (id, title, content) VALUES (?, ?, ?)", (str(uuid.uuid4()), title, result["output"]))
+                    self.cursor.execute("INSERT INTO books (id, place, title, content) VALUES (?, ?, ?, ?)", (str(uuid.uuid4()), place, title, result["output"]))
                 except Exception as e:
                     self.db.rollback()
                     raise e
@@ -94,19 +82,11 @@ class Recommender():
         self.cursor.execute("SELECT content FROM books WHERE title=?", (title,))
         return self.cursor.fetchone() is not None
     
-    def decode_correct_title(self, incomplete_titles):
-        assert len(incomplete_titles) > 0
-        self.cursor.execute("SELECT title FROM books")
-        titles = [output[0] for output in self.cursor.fetchall()]
-        results = [difflib.get_close_matches(incomplete_title, titles, n=1, cutoff=0)[0] for incomplete_title in incomplete_titles]
-        return results
-    
-    def get_recommendations(self, query):
-        self.cursor.execute("SELECT title FROM books")
-        titles = [output[0] for output in self.cursor.fetchall()]
+    def get_recommendations_from_query(self, query):
+        titles = [book["title"] for book in self.get_books_content(place=0)]
+        contents = [book["content"] for book in self.get_books_content(place=0)]
         idx2title = {idx: title for idx, title in enumerate(titles)}
-        tasks = self.get_books_content(titles)
-        embeddings = torch.tensor(self.embeddings.embed_documents([task["output"] for task in tasks]))
+        embeddings = torch.tensor(self.embeddings.embed_documents(contents))
         
         message = [
             ("system", "You are a dictionary that provides information about genres and contents of books which are requested by users. Do not include any specific titles of books in your response. "),
@@ -118,7 +98,21 @@ class Recommender():
 
         top_idx = similarities.argsort(descending=True)[0].item()
         return idx2title[top_idx]
+    
+    def get_recommendations_from_title(self, title):
+        titles = [book["title"] for book in self.get_books_content(place=0)]
+        idx2title = {idx: title for idx, title in enumerate(titles)}
+        contents = [book["content"] for book in self.get_books_content(place=0)]  
+        embeddings = torch.tensor(self.embeddings.embed_documents(contents))
 
+        query_content = [book["content"] for book in self.get_books_content(place=1) if book["title"] == title][0]
+        query_embedding = torch.tensor(self.embeddings.embed_query(query_content))
+        query_embedding = query_embedding.unsqueeze(0).expand(embeddings.shape[0], -1)
+        similarities = torch.nn.functional.cosine_similarity(embeddings, query_embedding, dim=1)
+
+        top_idx = similarities.argsort(descending=True)[0].item()
+        return idx2title[top_idx]
+        
 if __name__ == "__main__":
     recommender = Recommender("books.db", books=None, verbose=True)
     books = ["ハリーポッターと賢者の石", "ソードアートオンライン", "四月は君の嘘", "解析入門", "ゼロから作るDeep Learning"]

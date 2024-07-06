@@ -11,6 +11,7 @@ import message_filters
 import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
+from ..llm.find_books import BookFinder
 
 #The Detic Project Path
 DETIC_PATH="/root/Detic/"
@@ -62,7 +63,7 @@ def get_clip_embeddings(vocabulary, prompt='a '):
     return emb
 
 class DeticPredictor:
-    def __init__(self, vocabulary: str | List[str] = 'lvis'):
+    def __init__(self, vocabulary: str | List[str] = 'lvis', titles):
         #  vocabulary = 'lvis' # change to 'lvis', 'objects365', 'openimages', 'coco' or 'List of your own classes'
         self.predictor = DefaultPredictor(cfg)
         if vocabulary not in BUILDIN_CLASSIFIER:
@@ -93,7 +94,10 @@ class DeticPredictor:
         self.head_objects = []
         self.hand_objects = []
 
-        self.should_stop = False
+        self.books = []
+        self.should_detect = False
+
+        self.finder = BookFinder(titles)
 
 
     def _callback(self, head_rgb_data, head_depth_data, hand_rgb_data):
@@ -116,7 +120,10 @@ class DeticPredictor:
         pub.publish(self.bridge.cv2_to_imgmsg(output, 'bgr8'))
 
     def process(self):
-        while not rospy.is_shutdown() or not self.should_stop:
+        while not rospy.is_shutdown():
+            if not self.should_detect:
+                continue
+            self.books = []
             if self.head_rgb_image is None or self.head_depth_image is None or self.hand_rgb_image is None:
                 continue
             tmp_head = copy.deepcopy(self.head_rgb_image)
@@ -145,6 +152,12 @@ class DeticPredictor:
                 box = outputs_from_head["instances"].pred_boxes[idx].tensor.cpu().numpy()[0]
                 min_x, min_y, max_x, max_y = int(box[0]), int(box[1]), int(box[2]), int(box[3])
                 info = {"cls": object_cls, "location": (min_x, min_y, max_x, max_y), "depth": self.head_depth_image[int(min_y):int(max_y), int(min_x):int(max_x)]}
+                book_image = self.head_rgb_image[int(min_y):int(max_y), int(min_x):int(max_x)]
+
+                book_number, book_names = self.finder.find_books_from_raw(book_image)
+                if book_number > 0:
+                    self.books.append(book_names)
+
                 self.head_objects.append(info)
         
             for idx in range(len(outputs_from_hand["instances"].pred_classes)):

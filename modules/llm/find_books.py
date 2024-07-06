@@ -4,6 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts.chat import HumanMessagePromptTemplate
 import base64
 from dotenv import load_dotenv
+import difflib
 import cv2
 
 load_dotenv()
@@ -21,8 +22,9 @@ SYS_MESSAGE = """あなたは物体検出と文字認識を正確に行う機械
 
 class BookFinder:
     
-    def __init__(self):
+    def __init__(self, titles):
         self.model = ChatOpenAI(model="gpt-4o")
+        self.titles = titles
 
     def _process_image_from_raw(self, image):
         _, buffer = cv2.imencode('.png', image)
@@ -48,7 +50,25 @@ class BookFinder:
         chain = prompt | self.model
 
         response = chain.invoke({})
-        return response.content
+        book_number, book_names = self.parse_book_name(response.content)
+        book_names = self.recover_name(book_names)
+        return book_number, book_names
+    
+    def find_books_from_raw(self, image):
+        encoded_string = self._process_image_from_raw(image)
+        image_template = {
+            "image_url": {"url": f"data:image/jpg;base64,{encoded_string}"},
+        }
+    
+        human_template = HumanMessagePromptTemplate.from_template([image_template])
+        prompt = ChatPromptTemplate.from_messages([("system", (SYS_MESSAGE)), human_template])
+
+        chain = prompt | self.model
+
+        response = chain.invoke({})
+        book_number, book_names = self.parse_book_name(response.content)
+        book_names = self.recover_name(book_names)
+        return book_number, book_names
     
     @staticmethod
     def parse_book_name(detected_books: str):
@@ -60,11 +80,14 @@ class BookFinder:
             book_number = detected_books.split("<SEP>")[0]
             books = detected_books.split("<SEP>")[1:]
             return book_number, [book for book in books]
+        
+    def recover_name(self, incomplete_titles):
+        assert len(incomplete_titles) > 0
+        results = [difflib.get_close_matches(incomplete_title, self.titles, n=1, cutoff=0)[0] for incomplete_title in incomplete_titles]
+        return results
     
 
 if __name__ == "__main__":
     bf = BookFinder()
-    books = bf.find_books("./sample_image.jpg")
-    print(books)
-    book_number, book_names = bf.parse_book_name(books)
+    book_number, book_names = bf.find_books("test.jpg")
     print(book_number, book_names)

@@ -22,29 +22,27 @@ import subprocess
 
 
 class Controller:
-    def __init__(self, location_file_path, predefined_file_path="/root/HSR/catkin_ws/src/robocup_utils/predefined_info/paper.json"):
+    def __init__(self, location_file_path, predefined_file_path="/root/HSR/catkin_ws/src/robocup_utils/predefined_info/paper/locations.json"):
 
-        self.setup_log = open('setup.log', 'w')
-        self.gpsr_log = open('gpsr.log', 'w')
+        # # setup.launch をバックグラウンドで実行し、ログファイルに出力をリダイレクト
+        # self.setup_process = subprocess.Popen(['roslaunch', 'gpsr', 'setup.launch'],
+        #                                 stdout=self.setup_log,
+        #                                 stderr=subprocess.STDOUT)
 
-        # setup.launch をバックグラウンドで実行し、ログファイルに出力をリダイレクト
-        self.setup_process = subprocess.Popen(['roslaunch', 'gpsr', 'setup.launch'],
-                                        stdout=self.setup_log,
-                                        stderr=subprocess.STDOUT)
-
-        # gpsr_modules.launch をバックグラウンドで実行し、ログファイルに出力をリダイレクト
-        self.gpsr_process = subprocess.Popen(['roslaunch', 'gpsr', 'gpsr_modules.launch'],
-                                        stdout=self.gpsr_log,
-                                        stderr=subprocess.STDOUT)
+        # # gpsr_modules.launch をバックグラウンドで実行し、ログファイルに出力をリダイレクト
+        # self.gpsr_process = subprocess.Popen(['roslaunch', 'gpsr', 'gpsr_modules.launch'],
+        #                                 stdout=self.gpsr_log,
+        #                                 stderr=subprocess.STDOUT)
 
 
 
-        rospy.init_node('test_manager',anonymous=True)
+        #rospy.init_node('test_manager',anonymous=True)
 
         ##### Connect to Robot
         rospy.loginfo("Connecting to robot ..")
+        rospy.set_param("/gpsr_manager/use_mic", True)
         robot = Robot()
-        self.tts = robot.get('defulat_tts')
+        self.tts = robot.get('default_tts')
         rospy.loginfo("Connecting to robot 1/4")
         self.omni_base = MobileBaseWrapper(robot.get('omni_base'))
         rospy.loginfo("Connecting to robot 2/4")
@@ -66,20 +64,18 @@ class Controller:
 
         self.books = []
         for book in book_data:
-            self.books.append(book['name'])
-
+            if book["name"] != "instruction_point":
+                self.books.append(book['name'])
 
         gpsr_modules = GPSRModules(self.robot, self.locations)
         self.gpsr_functions = GPSRFunctions(self.robot, gpsr_modules)
-
-
 
          # rosparam
         rospy.set_param('/scaling', True)
         rospy.loginfo("EGPSR Task Manager Initialized")
 
-        #self.robot.speech.speak("Controller Initialized", wait=True)
-        self.speak("Controller Initialized")
+        self.neutral()
+        self.speak("コントローラーの初期化が完了")
 
     def neutral(self):
         self.robot.whole_body.move_to_neutral()
@@ -97,6 +93,9 @@ class Controller:
     
     def move_to_with_name(self, name):
         self.gpsr_functions.go_to_location(name)
+
+    def release(self):
+        self.robot.gripper.command(1.0)
 
     def pick(self):
 
@@ -126,12 +125,15 @@ class Controller:
 
         self.speak("本をつかみました")
 
-    def __del__(self):
-        self.setup_process.terminate()
-        self.gpsr_process.terminate()
-        self.setup_log.close()
-        self.gpsr_log.close()
-        rospy.loginfo("Controller is terminated.")
+if __name__ == "__main__":
+    ctl = Controller("/root/HSR/catkin_ws/src/gpsr/scripts/spotting_data/kawa5.json")
+    ctl.speak("聞き取りを開始")
+    flag, output = ctl.listen()
+    if not flag:
+        ctl.speak("聞き取り失敗")
+    else:
+        ctl.speak(output)
+    rospy.spin()
 
     
 

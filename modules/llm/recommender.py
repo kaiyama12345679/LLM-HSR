@@ -39,12 +39,12 @@ Do not include any sentences nor words unrelated to the book's content in your r
 
 
 class Recommender():
-    def __init__(self, db_path: str, books: List[str] | None = None, verbose: bool = False):
+    def __init__(self, db_path, books, verbose = False):
         self.logger = getLogger(__name__)
         self.stream_handler = StreamHandler()
         self.logger.addHandler(self.stream_handler)
 
-        self.llm = ChatOpenAI(model="gpt-4")
+        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
         self.prompt = PromptTemplate.from_template(TEMPLATE)
         self.tools = load_tools(["google-search"], llm=self.llm)
         self.agent = create_react_agent(self.llm, self.tools, self.prompt)
@@ -60,13 +60,13 @@ class Recommender():
             self.insert_books(books)
         self.db.commit()
 
-    def get_books_content(self, books: List[str]):
+    def get_books_content(self, books):
         tasks = []
         for title in books:
             tasks.append(self.get_content(title))
         return tasks
 
-    def get_content(self, title: str):
+    def get_content(self, title):
         try:
             self.cursor.execute("SELECT content FROM books WHERE title=?", (title,))
             content = self.cursor.fetchone()
@@ -76,7 +76,7 @@ class Recommender():
             self.db.rollback()
             raise e
         
-    def insert_books(self, titles: List[str]):
+    def insert_books(self, titles):
         for title in titles:
             if not self.check_book_exists(title):
                 try:
@@ -94,17 +94,18 @@ class Recommender():
         self.cursor.execute("SELECT content FROM books WHERE title=?", (title,))
         return self.cursor.fetchone() is not None
     
-    def decode_correct_title(self, incomplete_titles: List[str]):
+    def decode_correct_title(self, incomplete_titles):
         assert len(incomplete_titles) > 0
         self.cursor.execute("SELECT title FROM books")
         titles = [output[0] for output in self.cursor.fetchall()]
         results = [difflib.get_close_matches(incomplete_title, titles, n=1, cutoff=0)[0] for incomplete_title in incomplete_titles]
         return results
     
-    def get_recommendations(self, incomplete_books: List[str], query: str):
-        books = self.decode_correct_title(incomplete_books)
-        idx2title = {idx: title for idx, title in enumerate(books)}
-        tasks = self.get_books_content(books)
+    def get_recommendations(self, query):
+        self.cursor.execute("SELECT title FROM books")
+        titles = [output[0] for output in self.cursor.fetchall()]
+        idx2title = {idx: title for idx, title in enumerate(titles)}
+        tasks = self.get_books_content(titles)
         embeddings = torch.tensor(self.embeddings.embed_documents([task["output"] for task in tasks]))
         
         message = [
@@ -123,7 +124,5 @@ if __name__ == "__main__":
     books = ["ハリーポッターと賢者の石", "ソードアートオンライン", "四月は君の嘘", "解析入門", "ゼロから作るDeep Learning"]
     recommender.insert_books(books)
     query = "ファンタジー系じゃない，でもラブコメの本を探しているんだけど"
-    recommendded_book = recommender.get_recommendations(books, query)
+    recommendded_book = recommender.get_recommendations(query)
     print(recommendded_book)
-
-

@@ -82,7 +82,7 @@ class Controller:
 
     def speak(self, text):
         if type(text) is str:
-            self.tts.say(text)
+            self.robot.speak(text, wait=True)
 
     def listen(self):
         is_listen_success, sentence = self.gpsr_functions.gpsr_modules.call_listen_service()

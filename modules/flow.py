@@ -16,14 +16,23 @@ class State(Enum):
 
 ORIGIN = "instruction_point"
 
+OUTER_BOOKS = [
+    "ゴールデンカムイ",
+    "無職転生",
+    "ゼロから作るDeep Learning",
+    "ロシア語でボソッとデレるアーリャさん",
+    "プラチナコード",
+    "図書館戦争"
+]
+
 class Flow():
     def __init__(self):
 
         self.controller = Controller(location_file_path="/root/HSR/catkin_ws/src/gpsr/scripts/spotting_data/kawa5.json")
-        self.detector = DeticPredictor(titles=["hoge"])
         self.recommender = Recommender("books.db", verbose=True)
         self.recommender.insert_books(self.controller.books, place=0)
-        self.recommender.insert_books([""], place=1) # TODO: ここに本の内容を入れる
+        self.recommender.insert_books(OUTER_BOOKS, place=1) # TODO: ここに本の内容を入れる
+        self.detector = DeticPredictor(vocabulary="lvis", titles=OUTER_BOOKS)
         self.interaction = Interaction()
 
         self.state = State.WAIT
@@ -58,6 +67,7 @@ class Flow():
 
                 elif self.state == State.RECOMMEND:
                     self.controller.speak("どんな本が読みたいですか？")
+                    print(self.detector.book_name)
                     if self.detector.book_name is not None:
                         top_book = self.recommender.get_recommendations_from_title(self.detector.book_name)
                     else:

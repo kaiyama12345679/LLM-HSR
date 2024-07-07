@@ -82,7 +82,8 @@ class BookFinder:
             return book_number, [book for book in books]
         
     def recover_name(self, incomplete_titles):
-        assert len(incomplete_titles) > 0
+        if len(incomplete_titles) < 1:
+            return []
         results = [difflib.get_close_matches(incomplete_title, self.titles, n=1, cutoff=0)[0] for incomplete_title in incomplete_titles]
         return results
     

@@ -62,7 +62,7 @@ class Recommender():
 
     def get_books_content(self, place=0):
         self.cursor.execute("SELECT title, content FROM books WHERE place=?", (place,))
-        return [{"title": output[0], "output": output[1]} for output in self.cursor.fetchall()]
+        return [{"title": output[0], "content": output[1]} for output in self.cursor.fetchall()]
 
     def insert_books(self, titles, place=0):
         for title in titles:
@@ -118,5 +118,5 @@ if __name__ == "__main__":
     books = ["ハリーポッターと賢者の石", "ソードアートオンライン", "四月は君の嘘", "解析入門", "ゼロから作るDeep Learning"]
     recommender.insert_books(books)
     query = "ファンタジー系じゃない，でもラブコメの本を探しているんだけど"
-    recommendded_book = recommender.get_recommendations(query)
+    recommendded_book = recommender.get_recommendations_from_query(query)
     print(recommendded_book)

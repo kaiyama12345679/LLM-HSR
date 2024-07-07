@@ -82,7 +82,8 @@ class Controller:
 
     def speak(self, text):
         if type(text) is str:
-            self.robot.speak(text, wait=True)
+            self.tts.say(text)
+            rospy.sleep(0.4)
 
     def listen(self):
         is_listen_success, sentence = self.gpsr_functions.gpsr_modules.call_listen_service()
@@ -127,19 +128,5 @@ class Controller:
 
 if __name__ == "__main__":
     ctl = Controller("/root/HSR/catkin_ws/src/gpsr/scripts/spotting_data/kawa5.json")
-    ctl.speak("聞き取りを開始")
-    flag, output = ctl.listen()
-    if not flag:
-        ctl.speak("聞き取り失敗")
-    else:
-        ctl.speak(output)
+    ctl.move_to_with_name("ぼっちざろっく")
     rospy.spin()
-
-    
-
-
-
-
-
-
-

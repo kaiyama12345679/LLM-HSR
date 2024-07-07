@@ -11,11 +11,11 @@ import message_filters
 import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from ..llm.find_books import BookFinder
+from .find_books import BookFinder
 
 #The Detic Project Path
-DETIC_PATH="/root/Detic/"
-sys.path.append(DETIC_PATH)
+DETIC_PATH="/root/my-Detic/"
+sys.path.insert(0, DETIC_PATH)
 sys.path.insert(0, os.path.join(DETIC_PATH, "third_party/CenterNet2/"))
 
 import detectron2
@@ -63,7 +63,7 @@ def get_clip_embeddings(vocabulary, prompt='a '):
     return emb
 
 class DeticPredictor:
-    def __init__(self, vocabulary: str | List[str] = 'lvis', titles):
+    def __init__(self, vocabulary= 'lvis', titles=[]):
         #  vocabulary = 'lvis' # change to 'lvis', 'objects365', 'openimages', 'coco' or 'List of your own classes'
         self.predictor = DefaultPredictor(cfg)
         if vocabulary not in BUILDIN_CLASSIFIER:
@@ -122,8 +122,8 @@ class DeticPredictor:
     def process(self):
         while not rospy.is_shutdown():
             if not self.should_detect:
+                self.book = None
                 continue
-            self.book_name = None
             if self.head_rgb_image is None or self.head_depth_image is None or self.hand_rgb_image is None:
                 continue
             tmp_head = copy.deepcopy(self.head_rgb_image)
@@ -165,10 +165,13 @@ class DeticPredictor:
             if book_location is not None:
                 book_image = self.head_rgb_image[int(book_location[1]):int(book_location[3]), int(book_location[0]):int(book_location[2])]
                 book_number, book_names = self.finder.find_books_from_raw(book_image)
+                book_number = int(book_number)
+                print(book_number, book_names)
                 if book_number > 0:
-                    self.book_name = book_names[0]
+                    if self.book_name != book_names[0]:
+                        self.book_name = book_names[0]
         
-            for idx in range(len(outputs_from_hand["instances"].pred_classes)):
+            for idx in range(len(outputs_from_head["instances"].pred_classes)):
                 object_cls = self.metadata.thing_classes[outputs_from_head["instances"].pred_classes[idx]]
 
                 if  not (object_cls == "book" or object_cls == "person"):

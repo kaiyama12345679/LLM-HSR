@@ -36,7 +36,7 @@ class Controller:
 
 
 
-        #rospy.init_node('test_manager',anonymous=True)
+        #rospy.init_node('my_controller',anonymous=True)
 
         ##### Connect to Robot
         rospy.loginfo("Connecting to robot ..")
@@ -128,5 +128,14 @@ class Controller:
 
 if __name__ == "__main__":
     ctl = Controller("/root/HSR/catkin_ws/src/gpsr/scripts/spotting_data/kawa5.json")
-    ctl.move_to_with_name("ぼっちざろっく")
+    ctl.move_to_with_name("instruction_point")
     rospy.spin()
+
+    
+
+
+
+
+
+
+

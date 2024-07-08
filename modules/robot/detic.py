@@ -12,6 +12,7 @@ import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from .find_books import BookFinder
+import time
 
 #The Detic Project Path
 DETIC_PATH="/root/my-Detic/"
@@ -80,6 +81,8 @@ class DeticPredictor:
             self.num_classes = len(self.metadata.thing_classes)
             reset_cls_test(self.predictor.model, self.classifier, self.num_classes)
 
+        #rospy.init_node("predictor", anonymous=True)
+
         head_rgb_sub = message_filters.Subscriber('/hsrb/head_rgbd_sensor/rgb/image_raw', Image)
         head_depth_sub = message_filters.Subscriber('/hsrb/head_rgbd_sensor/depth_registered/image', Image)
         hand_rgb_sub = message_filters.Subscriber('/hsrb/hand_camera/image_raw', Image)
@@ -120,9 +123,11 @@ class DeticPredictor:
         pub.publish(self.bridge.cv2_to_imgmsg(output, 'bgr8'))
 
     def process(self):
+        print("start!")
         while not rospy.is_shutdown():
+            time.sleep(1.0)
             if not self.should_detect:
-                self.book = None
+                self.book_name = None
                 continue
             if self.head_rgb_image is None or self.head_depth_image is None or self.hand_rgb_image is None:
                 continue
@@ -162,14 +167,23 @@ class DeticPredictor:
                 info = {"cls": object_cls, "location": (min_x, min_y, max_x, max_y), "depth": self.head_depth_image[int(min_y):int(max_y), int(min_x):int(max_x)]}
                 self.head_objects.append(info)
             
-            if book_location is not None:
-                book_image = self.head_rgb_image[int(book_location[1]):int(book_location[3]), int(book_location[0]):int(book_location[2])]
-                book_number, book_names = self.finder.find_books_from_raw(book_image)
-                book_number = int(book_number)
-                print(book_number, book_names)
-                if book_number > 0:
-                    if self.book_name != book_names[0]:
-                        self.book_name = book_names[0]
+            # if book_location is not None:
+            #     book_image = self.head_rgb_image[int(book_location[1]):int(book_location[3]), int(book_location[0]):int(book_location[2])]
+            #     # book_number, book_names = self.finder.find_books_from_raw(book_image)
+            #     # book_number = int(book_number)
+            #     book_name = self.finder.find_books_from_raw(book_image)
+            #     print(book_name)
+            #     if book_name != "<UNK>":
+            #         self.book_name = book_name
+            #     # if book_number > 0:
+            #     #     if self.book_name != book_names[0]:
+            #     #         self.book_name = book_names[0]
+
+            book_name = self.finder.find_books_from_raw(self.head_rgb_image)
+            if book_name != "<UNK>":
+                self.book_name = book_name
+
+
         
             for idx in range(len(outputs_from_head["instances"].pred_classes)):
                 object_cls = self.metadata.thing_classes[outputs_from_head["instances"].pred_classes[idx]]

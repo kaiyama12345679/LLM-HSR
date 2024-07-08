@@ -19,7 +19,7 @@ ORIGIN = "instruction_point"
 OUTER_BOOKS = [
     "ゴールデンカムイ",
     "無職転生",
-    "ゼロから作るDeep Learning",
+    "pythonで学ぶアルゴリズムとデータ構造",
     "ロシア語でボソッとデレるアーリャさん",
     "プラチナコード",
     "図書館戦争"
@@ -27,6 +27,7 @@ OUTER_BOOKS = [
 
 class Flow():
     def __init__(self):
+        rospy.init_node("my_flow", anonymous=True)
 
         self.controller = Controller(location_file_path="/root/HSR/catkin_ws/src/gpsr/scripts/spotting_data/kawa5.json")
         self.recommender = Recommender("books.db", verbose=True)
@@ -48,6 +49,7 @@ class Flow():
                     self.detector.should_detect = True
                     is_listen_success, sentence = self.controller.listen()
                     print(is_listen_success, sentence)
+                    print(self.detector.book_name)
                     
 
                     if not is_listen_success:
@@ -67,7 +69,6 @@ class Flow():
 
                 elif self.state == State.RECOMMEND:
                     self.controller.speak("どんな本が読みたいですか？")
-                    print(self.detector.book_name)
                     if self.detector.book_name is not None:
                         top_book = self.recommender.get_recommendations_from_title(self.detector.book_name)
                     else:

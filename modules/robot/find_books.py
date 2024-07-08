@@ -20,6 +20,12 @@ SYS_MESSAGE = """あなたは物体検出と文字認識を正確に行う機械
     上で述べたformat以外の出力は受け付けられません.
 """
 
+SYS_MESSAGE = """あなたは物体検出と文字認識を正確に行う機械です.画像に写っている，最も近い本の表紙に記載されているその本のタイトルのみを出力してください．
+本の表紙に人の手など他の物体が被っていても続行してください．
+可能な限り，本のタイトル名を出力することを求めますが，どうしても読み取れない場合は，<UNK> のみを出力してください
+そして，あなたの応答に，本のタイトル以外の文字は絶対に含めないでください.
+"""
+
 class BookFinder:
     
     def __init__(self, titles):
@@ -66,9 +72,14 @@ class BookFinder:
         chain = prompt | self.model
 
         response = chain.invoke({})
-        book_number, book_names = self.parse_book_name(response.content)
-        book_names = self.recover_name(book_names)
-        return book_number, book_names
+        if response.content != "<UNK>":
+            correct_name = difflib.get_close_matches(response.content, self.titles, n=1, cutoff=0)[0]
+            return correct_name
+        else:
+            return response.content
+        # book_number, book_names = self.parse_book_name(response.content)
+        # book_names = self.recover_name(book_names)
+        # return book_number, book_names
     
     @staticmethod
     def parse_book_name(detected_books: str):

@@ -6,4 +6,5 @@
     - `GOOGLE_API_KEY` - Google API key
     - `GOOGLE_CSE_ID` - Google Custom Search Engine ID
     - `OPENAI_API_KEY` - OpenAI API key
-4. Run `poetry run python recommend.py`
+4. `cd ./modules`
+5. Run `poetry run python flow.py`
